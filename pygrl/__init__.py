@@ -28,12 +28,12 @@ __license__ = "MIT"
 __copyright__ = "Copyright (c) 2024 Jonah Whaler"
 
 from .main import GeneralRateLimiter, GeneralRateLimiter_with_Lock
-from .storage import BasicStorage, Storage
+from .storage import BasicStorage, Storage, SQLite3_Storage
 from .custom_exception import ExceededRateLimitError
 
 __all__ = [
     "GeneralRateLimiter",
     "GeneralRateLimiter_with_Lock",
-    "BasicStorage", "Storage",
+    "BasicStorage", "Storage", "SQLite3_Storage",
     "ExceededRateLimitError"
 ]
