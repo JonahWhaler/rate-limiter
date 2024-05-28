@@ -1,5 +1,4 @@
 import asyncio
-import random
 from time import time
 from .custom_exception import ExceededRateLimitError
 from .storage import Storage
