@@ -4,6 +4,7 @@ from time import time
 from typing import Optional
 from custom_exception import ExceededRateLimitError
 from storage import Storage, BasicStorage
+from .storage import Storage
 
 
 class GeneralRateLimiter:
