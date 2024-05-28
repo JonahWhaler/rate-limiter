@@ -1,9 +1,7 @@
 import asyncio
 import random
 from time import time
-from typing import Optional
-from custom_exception import ExceededRateLimitError
-from storage import Storage, BasicStorage
+from .custom_exception import ExceededRateLimitError
 from .storage import Storage
 
 
