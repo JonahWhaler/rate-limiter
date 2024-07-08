@@ -21,7 +21,7 @@ class GeneralRateLimiter:
         self.__max_requests = max_requests
         self.__time_window = time_window
         self.__capacity = max_capacity
-        self.__cleanup_threshold = cleanup_threshold
+        self.__cleanup_threshold = cleanup_threshold if cleanup_threshold > time_window else time_window
 
     def check_limit(self, key: str) -> bool:
         """
@@ -149,7 +149,7 @@ class GeneralRateLimiter_with_Lock:
         self.__max_requests = max_requests
         self.__time_window = time_window
         self.__capacity = max_capacity
-        self.__cleanup_threshold = cleanup_threshold
+        self.__cleanup_threshold = cleanup_threshold if cleanup_threshold > time_window else time_window
         self.__lock = asyncio.Lock()
 
     async def check_limit(self, key: str) -> bool:
