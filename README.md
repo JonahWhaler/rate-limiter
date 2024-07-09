@@ -1,5 +1,7 @@
 ![my-logo](https://jonahtzuchi.github.io/rate-limiter/logo-mini.jpg "pygrl-Logo")
 
+[![Downloads](https://static.pepy.tech/badge/pygrl)](https://pepy.tech/project/pygrl)
+
 # PYGRL - Python General Rate Limiter
 Another Python package aim to offer "Rate Limiting" functionality for general use cases.
 
