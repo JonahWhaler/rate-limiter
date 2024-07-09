@@ -84,14 +84,16 @@ def test_bs_clear(basic_storage, keys: list, values: list):
         assert basic_storage.get(k) is None
 
 
-@pytest.mark.parametrize("keys,values", [
-    (["a", "b", "c"], [(100, 1), (201, 23), (823, 12)]),
-    (["z", "y", "x"], [(100, 1), (201, 23), (823, 12)]),
-    (["a", "w", "f", "d", "k", "e"], [(100, 1), (201, 23), (823, 12), (123, 20), (234, 32), (239, 12)]),
-    (["a", "b", "c", "d", "e", "f"], [(100, 1), (201, 23), (823, 12), (123, 20), (234, 32), (239, 12)])
+@pytest.mark.parametrize("keys,values,expected", [
+    (["a", "b", "c"], [(100, 1), (201, 23), (823, 12)], ["a", "b", "c"]),
+    (["z", "y", "x"], [(100, 1), (201, 23), (823, 12)], ["z", "y", "x"]),
+    (["a", "w", "f", "d", "k", "e"], [(100, 1), (201, 23), (823, 12), (123, 20), (234, 32), (239, 12)], ["a", "w", "f", "d", "k", "e"]),
+    (["a", "b", "c", "d", "e", "f"], [(100, 1), (201, 23), (823, 12), (123, 20), (234, 32), (239, 12)], ["a", "b", "c", "d", "e", "f"]),
+    ([1, 2, 3], [(100, 1), (201, 23), (823, 12)], ["1", "2", "3"]),
+    ([10, 5, 8], [(100, 1), (201, 23), (823, 12)], ["10", "5", "8"])
 ])
-def test_bs_keys(basic_storage, keys: list, values: list):
+def test_bs_keys(basic_storage, keys: list, values: list, expected: list):
     for k, v in zip(keys, values):
         basic_storage.set(k, {"start_time": v[0], "num_requests": v[1]})
-    intersect = set(basic_storage.keys()) & set(keys)
-    assert len(intersect) == len(keys)
+    intersect = set(basic_storage.keys()) & set(expected)
+    assert len(intersect) == len(expected)
