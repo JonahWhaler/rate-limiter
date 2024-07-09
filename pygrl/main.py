@@ -1,5 +1,6 @@
 import asyncio
 from time import time
+from typing import Optional
 from .custom_exception import ExceededRateLimitError
 from .storage import Storage
 
@@ -80,7 +81,8 @@ class GeneralRateLimiter:
     def general_rate_limiter(
             cls, storage: Storage,
             max_requests: int, time_window: int = 1,
-            max_capacity: int = 32, cleanup_threshold: float = 0.1
+            max_capacity: int = 32, cleanup_threshold: float = 0.1,
+            key_builder: Optional[callable] = None
     ):
         """
         Decorator to limit the number of requests to a function.
@@ -97,7 +99,9 @@ class GeneralRateLimiter:
             The maximum number of keys to store in the storage.
         cleanup_threshold : float
             The threshold to clean up the storage.
-
+        key_builder: callable
+            The function to build the key from the function and arguments.
+        
         Returns
         -------
         function : The decorated function.
@@ -110,14 +114,19 @@ class GeneralRateLimiter:
         ------
         - The key is the name of the function by default.
         - The key can be passed as a keyword argument to the function if rate limiting is required for different keys.
+        - `key_builder` has a higher priority than the `key` argument.
+        - `key_builder` should be a function that returns a string.
         """
 
         def decorator(func):
             limiter = GeneralRateLimiter(storage, max_requests, time_window, max_capacity, cleanup_threshold)
 
             def wrapper(*args, **kwargs):
-                key = kwargs.get("key")
-                if not key:
+                if key_builder:
+                    key = key_builder(func, *args, **kwargs)
+                elif kwargs.get("key"):
+                    key = kwargs.get("key")
+                else:
                     key = f"{func.__name__}"
                 if not limiter(key):
                     raise ExceededRateLimitError(
@@ -196,7 +205,8 @@ class GeneralRateLimiter_with_Lock:
     def general_rate_limiter(
             cls, storage: Storage,
             max_requests: int, time_window: int = 1,
-            max_capacity: int = 32, cleanup_threshold: float = 0.1
+            max_capacity: int = 32, cleanup_threshold: float = 0.1,
+            key_builder: Optional[callable] = None
     ):
         """
         Decorator to limit the number of requests to a function.
@@ -213,7 +223,9 @@ class GeneralRateLimiter_with_Lock:
             The maximum number of keys to store in the storage.
         cleanup_threshold : float
             The threshold to clean up the storage.
-
+        key_builder: callable
+            The function to build the key from the function and arguments.
+        
         Returns
         -------
         function : The decorated function.
@@ -226,14 +238,19 @@ class GeneralRateLimiter_with_Lock:
         ------
         - The key is the name of the function by default.
         - The key can be passed as a keyword argument to the function if rate limiting is required for different keys.
+        - `key_builder` has a higher priority than the `key` argument.
+        - `key_builder` should be a function that returns a string.
         """
 
         def decorator(func):
             limiter = GeneralRateLimiter_with_Lock(storage, max_requests, time_window, max_capacity, cleanup_threshold)
 
             async def wrapper(*args, **kwargs):
-                key = kwargs.get("key")
-                if not key:
+                if key_builder:
+                    key = key_builder(func, *args, **kwargs)
+                elif kwargs.get("key"):
+                    key = kwargs.get("key")
+                else:
                     key = f"{func.__name__}"
                 if not await limiter(key):
                     raise ExceededRateLimitError(
