@@ -121,7 +121,7 @@ import random
     key_builder=lambda f, *args, **kwargs: kwargs["username"]
 )
 def connect(username: str, host: str, port: int):
-    return f"{key} connected to {host}:{port}"
+    return f"{username} connected to {host}:{port}"
 
 users = ["Alice", "Bob", "Charlie", "David", "Eve"]
 try:
@@ -228,7 +228,7 @@ import random
     key_builder=lambda f, *args, **kwargs: kwargs["username"]
 )
 def connect(username: str, host: str, port: int):
-    return f"{key} connected to {host}:{port}"
+    return f"{username} connected to {host}:{port}"
 
 users = ["Alice", "Bob", "Charlie", "David", "Eve"]
 try:
