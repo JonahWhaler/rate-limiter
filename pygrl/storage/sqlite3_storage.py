@@ -15,6 +15,9 @@ class SQLite3_Storage(Storage):
     Attributes:
     db_path (str): The path to the SQLite3 database.
     table_name (str): The name of the table in the SQLite3 database.
+    
+    Notes:
+    Expect the keys to be string, or at least convertible to strings.
     """
 
     def __init__(self, db_path: str, table_name: str = "storage", overwrite: bool = False):
