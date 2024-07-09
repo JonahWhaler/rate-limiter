@@ -80,6 +80,11 @@ class GeneralRateLimiter:
     def reset(self):
         self.__storage.clear()
     
+    def info(self) -> dict:
+        keys: list = self.__storage.keys()
+        values: list = list(map(lambda key: self.__storage.get(key), keys))
+        return {"keys": keys, "values": values}
+    
     @classmethod
     def general_rate_limiter(
             cls, storage: Storage,
@@ -207,6 +212,12 @@ class GeneralRateLimiter_with_Lock:
     async def reset(self):
         async with self.__lock:
             self.__storage.clear()
+    
+    async def info(self) -> dict:
+        async with self.__lock:
+            keys: list = self.__storage.keys()
+            values: list = list(map(lambda key: self.__storage.get(key), keys))
+            return {"keys": keys, "values": values}
     
     @classmethod
     def general_rate_limiter(
