@@ -187,18 +187,18 @@ def test_grl_bs_check_limit_reset(max_requests: int, time_window: int):
     for _ in range(max_requests):
         # The rate limiter should allow access up to `max_requests` times within the `time_window`.
         assert rate_limiter.check_limit(key)
-    
+
     # Expect to return False from `max_requests` + 1 onward.
     assert not rate_limiter.check_limit(key)
-    
+
     # Runtime check
     diff = time.time() - t1
     if diff > time_window:
         raise RuntimeError("Previous steps took longer than the time window")
-    
+
     # Reset the rate limiter
     rate_limiter.reset()
-    
+
     # Expect the rate limit to be lifted
     assert rate_limiter.check_limit(key)
 
@@ -212,17 +212,166 @@ def test_grl_bs__call__reset(max_requests: int, time_window: int):
     for _ in range(max_requests):
         # The rate limiter should allow access up to `max_requests` times within the `time_window`.
         assert rate_limiter(key)
-    
+
     # Expect to return False from `max_requests` + 1 onward.
     assert not rate_limiter(key)
-    
+
     # Runtime check
     diff = time.time() - t1
     if diff > time_window:
         raise RuntimeError("Previous steps took longer than the time window")
+
+    # Reset the rate limiter
+    rate_limiter.reset()
+
+    # Expect the rate limit to be lifted
+    assert rate_limiter(key)
+
+
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 3), (10, 4)])
+def test_grl_check_limit_info(max_requests: int, time_window: int):
+    # Parameter
+    key = "key"
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    for _ in range(max_requests):
+        rate_limiter.check_limit(key)
+
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+    for value in values:
+        assert value["num_requests"] == max_requests
+
+
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 3), (10, 4)])
+def test_grl__call__info(max_requests: int, time_window: int):
+    # Parameter
+    key = "key"
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    for _ in range(max_requests):
+        rate_limiter(key)
+
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+    for value in values:
+        assert value["num_requests"] == max_requests
+
+
+@pytest.mark.parametrize(
+    "max_requests,time_window,sequence,expected",
+    [
+        (3, 3, [1, 1, 2, 2, 1, 3, 1, 2, 3], {"1": 4, "2": 3, "3": 2}),
+        (
+            4,
+            5,
+            ["a", "a", "b", "c", "d", "a", "b", "c", "e", "e"],
+            {"a": 3, "b": 2, "c": 2, "d": 1, "e": 2},
+        ),
+    ],
+)
+def test_grl_check_limit_sequence_info(
+    max_requests: int, time_window: int, sequence: list, expected: dict
+):
+    # Parameter
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    for value in sequence:
+        rate_limiter.check_limit(value)
+
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+
+    for k, v in zip(keys, values):
+        assert v["num_requests"] == expected.get(k)
+
+
+@pytest.mark.parametrize(
+    "max_requests,time_window,sequence,expected",
+    [
+        (3, 3, [1, 1, 2, 2, 1, 3, 1, 2, 3], {"1": 4, "2": 3, "3": 2}),
+        (
+            4,
+            5,
+            ["a", "a", "b", "c", "d", "a", "b", "c", "e", "e"],
+            {"a": 3, "b": 2, "c": 2, "d": 1, "e": 2},
+        ),
+    ],
+)
+def test_grl__call__sequence_info(
+    max_requests: int, time_window: int, sequence: list, expected: dict
+):
+    # Parameter
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    for value in sequence:
+        rate_limiter(value)
+
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+
+    for k, v in zip(keys, values):
+        assert v["num_requests"] == expected.get(k)
+
+
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 5)])
+def test_grl_info(max_requests: int, time_window: int):
+    # Parameter
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    
+    # Expect the initial state to be empty
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+    assert len(keys) == 0
+    
+    # Load the rate limiter up to it's threshold
+    for _ in range(max_requests):
+        rate_limiter.check_limit("key")
+    
+    # Expect the state to be full
+    post_info: dict = rate_limiter.info()
+    post_keys: list = post_info["keys"]
+    post_values: list = post_info["values"]
+    assert len(post_keys) == len(post_values)
+    assert len(post_keys) == 1
+    assert post_values[0]['num_requests'] == max_requests
+
+
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 5)])
+def test_grl_info_after_reset(max_requests: int, time_window: int):
+    # Parameter
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    
+    start = time.time()
+    # Load the rate limiter up to it's threshold
+    for _ in range(max_requests):
+        rate_limiter.check_limit("key")
+    
+    # Expect the state to be full
+    info: dict = rate_limiter.info()
+    keys: list = info["keys"]
+    values: list = info["values"]
+    assert len(keys) == len(values)
+    assert len(keys) == 1
+    assert values[0]['num_requests'] == max_requests
     
     # Reset the rate limiter
     rate_limiter.reset()
     
-    # Expect the rate limit to be lifted
-    assert rate_limiter(key)
+    # Expect the state to be empty after reset
+    post_info: dict = rate_limiter.info()
+    post_keys: list = post_info["keys"]
+    post_values: list = post_info["values"]
+    assert len(post_keys) == len(post_values)
+    assert len(post_keys) == 0
+
+    # Runtime check
+    diff = time.time() - start
+    if diff > time_window:
+        raise RuntimeError("Previous steps took longer than the time window")
