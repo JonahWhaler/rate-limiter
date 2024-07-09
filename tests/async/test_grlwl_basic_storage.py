@@ -181,3 +181,55 @@ async def test_grlwl_bs__call__w_different_key_sequence(
     diff = time.time() - t1
     if diff > time_window:
         raise RuntimeError("Previous steps took longer than the time window")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 3), (10, 4)])
+async def test_grlwl_bs_check_limit_reset(max_requests: int, time_window: int):
+    # Parameter
+    key = "key"
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    t1 = time.time()
+    for _ in range(max_requests):
+        # The rate limiter should allow access up to `max_requests` times within the `time_window`.
+        assert await rate_limiter.check_limit(key)
+    
+    # Expect to return False from `max_requests` + 1 onward.
+    assert not await rate_limiter.check_limit(key)
+    
+    # Runtime check
+    diff = time.time() - t1
+    if diff > time_window:
+        raise RuntimeError("Previous steps took longer than the time window")
+    
+    # Reset the rate limiter
+    await rate_limiter.reset()
+    
+    # Expect the rate limit to be lifted
+    assert await rate_limiter.check_limit(key)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("max_requests,time_window", [(3, 3), (4, 3), (10, 4)])
+async def test_grlwl_bs__call__reset(max_requests: int, time_window: int):
+    # Parameter
+    key = "key"
+    rate_limiter = grl(STORAGE, max_requests=max_requests, time_window=time_window)
+    t1 = time.time()
+    for _ in range(max_requests):
+        # The rate limiter should allow access up to `max_requests` times within the `time_window`.
+        assert await rate_limiter(key)
+    
+    # Expect to return False from `max_requests` + 1 onward.
+    assert not await rate_limiter(key)
+    
+    # Runtime check
+    diff = time.time() - t1
+    if diff > time_window:
+        raise RuntimeError("Previous steps took longer than the time window")
+    
+    # Reset the rate limiter
+    await rate_limiter.reset()
+    
+    # Expect the rate limit to be lifted
+    assert await rate_limiter(key)

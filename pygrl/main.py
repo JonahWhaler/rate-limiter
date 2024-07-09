@@ -77,6 +77,9 @@ class GeneralRateLimiter:
 
         return return_value
 
+    def reset(self):
+        self.__storage.clear()
+    
     @classmethod
     def general_rate_limiter(
             cls, storage: Storage,
@@ -201,6 +204,10 @@ class GeneralRateLimiter_with_Lock:
 
         return return_value
 
+    async def reset(self):
+        async with self.__lock:
+            self.__storage.clear()
+    
     @classmethod
     def general_rate_limiter(
             cls, storage: Storage,

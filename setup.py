@@ -5,7 +5,7 @@ DESCRIPTION = 'Another Python package aim to offer "Rate Limiting" functionality
 # python3 setup.py sdist bdist_wheel
 # twine upload --skip-existing dist/* --verbose
 
-VERSION = '0.0.4.1'
+VERSION = '0.0.5.1'
 
 setup(
     name='pygrl',
