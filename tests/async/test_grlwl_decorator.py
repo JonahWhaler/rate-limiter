@@ -7,7 +7,7 @@ from pygrl import (
     ExceededRateLimitError,
 )
 import time
-from typing import Any
+from typing import Any, Callable
 
 
 BS = BasicStorage()
@@ -149,6 +149,72 @@ async def test_decorated_function_w_different_key_sequence(
     # Test
     with pytest.raises(ExceededRateLimitError) as exc_info:
         await function(key=f"k:{key}")
+    # Runtime check
+    diff = time.time() - start
+    if diff > time_window:
+        raise RuntimeError("Previous steps took longer than the time window")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("storage,kwargs,key_builder", [
+    (BS, {"username": "user1", "age": 10}, lambda f, *args, **kwargs: kwargs["username"]),
+    (SS, {"topic": "python", "fee": 1000}, lambda f, *args, **kwargs: ','.join([f'{k}={v}' for k, v in kwargs.items()])),
+    (BS, {"department": "IT", "level": 3}, lambda f, *args, **kwargs: f"{f.__name__}:{kwargs['department']}"),
+    (SS, {"department": "EDU", "level": 4}, lambda f, *args, **kwargs: f"{f.__name__}:{kwargs['department']}"),
+])
+async def test_decorated_function_w_key_builder_kwargs(storage: Storage, kwargs: dict, key_builder: Callable):
+    # Parameter
+    max_requests = 3
+    time_window = 3
+    
+    # Define a decorated function
+    @grl.general_rate_limiter(storage, max_requests, time_window, key_builder=key_builder)
+    async def function(**kwargs):
+        return True
+
+    start = time.time()
+    # Call the function up to the maximum number of requests
+    for _ in range(max_requests):
+        await function(**kwargs)
+    
+    with pytest.raises(ExceededRateLimitError) as exc_info:
+        await function(**kwargs)
+    # Call the function with a different kwargs should not trigger the error
+    await function(hello="world", my="friend", username="someone", department="General")
+    # Runtime check
+    diff = time.time() - start
+    if diff > time_window:
+        raise RuntimeError("Previous steps took longer than the time window")
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("storage,args,key_builder", [
+    (BS, ("user1", 10), lambda f, *args, **kwargs: args[0]),
+    (SS, ("python", 1000), lambda f, *args, **kwargs: args[0]),
+    (BS, ("IT", 3), lambda f, *args, **kwargs: f"{f.__name__}:{args[0]}"),
+    (SS, ("EDU", 4), lambda f, *args, **kwargs: f"{f.__name__}:{args[1]}"),
+    (BS, ("IT", 3, False), lambda f, *args, **kwargs: ",".join(list(map(lambda x: str(x), args)))),
+    (SS, ("EDU", 4, True), lambda f, *args, **kwargs: ",".join(list(map(lambda x: str(x), args)))),
+])
+async def test_decorated_function_w_key_builder_args(storage: Storage, args: tuple, key_builder: Callable):
+    # Parameter
+    max_requests = 3
+    time_window = 3
+    
+    # Define a decorated function
+    @grl.general_rate_limiter(storage, max_requests, time_window, key_builder=key_builder)
+    async def function(*args):
+        return True
+
+    start = time.time()
+    # Call the function up to the maximum number of requests
+    for _ in range(3):
+        await function(*args)
+    
+    with pytest.raises(ExceededRateLimitError) as exc_info:
+        await function(*args)
+    
+    # Call the function with a different args should not trigger the error
+    await function(100, 200, 300)
     # Runtime check
     diff = time.time() - start
     if diff > time_window:
