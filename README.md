@@ -1,4 +1,4 @@
-![my-logo](https://jonahtzuchi.github.io/rate-limiter/logo-mini.jpg "pygrl-Logo")
+![my-logo](https://jonahwhaler.github.io/rate-limiter/logo-mini.jpg "pygrl-Logo")
 
 [![Downloads](https://static.pepy.tech/badge/pygrl)](https://pepy.tech/project/pygrl)
 
